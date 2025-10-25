@@ -1,3 +1,5 @@
+'use client'
+
 import { delay } from "@/lib/delay"
 import { User } from "@/types/user"
 import { createContext, useState } from "react"
@@ -7,7 +9,6 @@ export type AuthContextType = {
   login: (email: string, password: string) => Promise<User>
   register: (email: string, password: string, name: string) => Promise<User>
   logout: () => void
-  loading: boolean
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null)
@@ -21,11 +22,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return null
   })
-  const [loading, setLoading] = useState<boolean>(true)
 
   const login = async (email: string, password: string): Promise<User> => {
     await delay(800)
-    // Preciso buscar o user no localStorage e comparar os dados com esse.
+    const storagedUser = localStorage.getItem('user')
+    if (!storagedUser) {
+      throw new Error("User not found")
+    }
+
+    if (storagedUser) {
+      const formattedUser = JSON.parse(storagedUser)
+
+      if (formattedUser.email !== email || formattedUser.password !== password) {
+        throw new Error("Invalid credentials")
+      }
+    }
+
     // Se o email ou senha noa bater, vou enviar um invalid credentials
     // Se o email nao foi encontrado, vou enviar um not found.
     const mockUser: Partial<User> = {
@@ -39,7 +51,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // setUser(mockUser)
     // localStorage.setItem('user', JSON.stringify(mockUser))
     // return mockUser
-    setLoading(false)
     return {} as User
   }
 
@@ -54,7 +65,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setUser(mockUser)
     localStorage.setItem('user', JSON.stringify(mockUser))
-    setLoading(false)
     return mockUser
   }
 
@@ -68,7 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     register,
     logout,
-    loading
   }
 
   return (
